@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Badminton Match System</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 1em;
+      max-width: 600px;
+      margin: auto;
+    }
+    h1 {
+      text-align: center;
+    }
+    button {
+      width: 100%;
+      padding: 1em;
+      margin: 0.5em 0;
+      font-size: 1.1em;
+      border: none;
+      background-color: #4caf50;
+      color: white;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    button.clear {
+      background-color: #f44336;
+    }
+    .message {
+      margin-top: 1em;
+      text-align: center;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>🏸 Badminton Club System</h1>
+
+  <button id="generate">Generate New Round</button>
+  <button id="clear" class="clear">Clear All Toggles</button>
+
+  <div class="message" id="status"></div>
+
+  <script>
+    const status = document.getElementById('status');
+
+    async function callScript(functionName) {
+      status.textContent = 'Processing...';
+      try {
+        const response = await fetch(
+          'https://script.google.com/macros/s/AKfycbzOF7sBUburm3FVVYD-I_tv13UZ6JfKvRNQDwXfb3gxqAx1yYczqJXDU9TangdBBYZ0/exec',
+          {
+            method: 'POST',
+            mode: 'no-cors', // prevent CORS errors
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ action: functionName })
+          }
+        );
+        status.textContent = `Success: ${functionName} executed.`;
+      } catch (err) {
+        console.error(err);
+        status.textContent = 'Error: Check script deployment URL and permissions';
+      }
+    }
+
+    document.getElementById('generate').onclick = () => callScript('generateMatches');
+    document.getElementById('clear').onclick = () => callScript('clearAllToggles');
+  </script>
+</body>
+</html>
