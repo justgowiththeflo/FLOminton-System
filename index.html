@@ -3,72 +3,146 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Badminton Match System</title>
+  <title>Badminton Admin</title>
   <style>
     body {
       font-family: sans-serif;
       padding: 1em;
-      max-width: 600px;
+      max-width: 800px;
       margin: auto;
     }
     h1 {
       text-align: center;
     }
-    button {
+    table {
       width: 100%;
-      padding: 1em;
-      margin: 0.5em 0;
-      font-size: 1.1em;
-      border: none;
-      background-color: #4caf50;
-      color: white;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-    button.clear {
-      background-color: #f44336;
-    }
-    .message {
+      border-collapse: collapse;
       margin-top: 1em;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 0.5em;
       text-align: center;
-      font-weight: bold;
+    }
+    th {
+      background: #eee;
+    }
+    button {
+      padding: 0.5em 1em;
+      margin: 0.5em 0;
+      font-size: 1em;
+    }
+    .row-controls {
+      display: flex;
+      justify-content: center;
+      gap: 0.5em;
+    }
+    #addForm {
+      display: flex;
+      justify-content: space-between;
+      gap: 1em;
+      margin-top: 1em;
+    }
+    #addForm input, #addForm select {
+      flex: 1;
+      padding: 0.5em;
     }
   </style>
 </head>
 <body>
-  <h1>🏸 Badminton Club System</h1>
+  <h1>🛠️ Badminton Admin</h1>
 
-  <button id="generate">Generate New Round</button>
-  <button id="clear" class="clear">Clear All Toggles</button>
+  <form id="addForm">
+    <input type="text" id="newName" placeholder="Player Name" required />
+    <select id="newGender">
+      <option value="M">Male</option>
+      <option value="F">Female</option>
+    </select>
+    <button type="submit">Add Player</button>
+  </form>
 
-  <div class="message" id="status"></div>
+  <div style="text-align: right; margin-top: 1em;">
+    <button onclick="saveChanges()">💾 Save All Changes</button>
+  </div>
+
+  <table id="adminTable">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Gender</th>
+        <th>Present</th>
+        <th>Include</th>
+        <th>Exclude</th>
+        <th>Remove</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 
   <script>
-    const status = document.getElementById('status');
+    const API_URL = 'YOUR_SCRIPT_DEPLOYMENT_URL_HERE';
+    let players = [];
 
-    async function callScript(functionName) {
-      status.textContent = 'Processing...';
-      try {
-        const response = await fetch(
-          'https://script.google.com/macros/s/AKfycbzOF7sBUburm3FVVYD-I_tv13UZ6JfKvRNQDwXfb3gxqAx1yYczqJXDU9TangdBBYZ0/exec',
-          {
-            method: 'POST',
-            mode: 'no-cors', // prevent CORS errors
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ action: functionName })
-          }
-        );
-        status.textContent = `Success: ${functionName} executed.`;
-      } catch (err) {
-        console.error(err);
-        status.textContent = 'Error: Check script deployment URL and permissions';
+    async function fetchData() {
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'getAdminData' })
+      });
+      const data = await res.json();
+      players = data;
+      renderTable();
+    }
+
+    function renderTable() {
+      const tbody = document.querySelector('#adminTable tbody');
+      tbody.innerHTML = '';
+      players.forEach((player, i) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td><input value="${player.name}" onchange="players[${i}].name=this.value" /></td>
+          <td><select onchange="players[${i}].gender=this.value">
+            <option value="M" ${player.gender==='M'?'selected':''}>M</option>
+            <option value="F" ${player.gender==='F'?'selected':''}>F</option>
+          </select></td>
+          <td><input type="checkbox" ${player.present?'checked':''} onchange="players[${i}].present=this.checked" /></td>
+          <td><input type="checkbox" ${player.include?'checked':''} onchange="players[${i}].include=this.checked" /></td>
+          <td><input type="checkbox" ${player.exclude?'checked':''} onchange="players[${i}].exclude=this.checked" /></td>
+          <td><button onclick="removePlayer(${i})">🗑️</button></td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    function removePlayer(index) {
+      if (confirm(`Remove ${players[index].name}?`)) {
+        players.splice(index, 1);
+        renderTable();
       }
     }
 
-    document.getElementById('generate').onclick = () => callScript('generateMatches');
-    document.getElementById('clear').onclick = () => callScript('clearAllToggles');
+    function saveChanges() {
+      fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'setAdminData', players })
+      })
+      .then(() => alert('Changes saved.'))
+      .catch(() => alert('Error saving.'));
+    }
+
+    document.getElementById('addForm').onsubmit = e => {
+      e.preventDefault();
+      const name = document.getElementById('newName').value.trim();
+      const gender = document.getElementById('newGender').value;
+      if (name) {
+        players.push({ name, gender, present: false, include: false, exclude: false });
+        renderTable();
+        e.target.reset();
+      }
+    };
+
+    fetchData();
   </script>
 </body>
 </html>
