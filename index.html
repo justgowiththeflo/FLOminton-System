@@ -80,71 +80,100 @@
   </table>
 <button onclick="savePlayers()">Save All Changes</button>
 
-  <script>
-    const API_URL = 'https://script.google.com/macros/s/AKfycbzOF7sBUburm3FVVYD-I_tv13UZ6JfKvRNQDwXfb3gxqAx1yYczqJXDU9TangdBBYZ0/exec';
-    let players = [];
+ <script>
+const API_URL = 'https://script.google.com/macros/s/AKfycbzOF7sBUburm3FVVYD-I_tv13UZ6JfKvRNQDwXfb3gxqAx1yYczqJXDU9TangdBBYZ0/exec';
+let players = [];
 
-    async function fetchData() {
-      const res = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'getAdminData' })
-      });
-      const data = await res.json();
-      players = data;
-      renderTable();
-    }
+async function fetchData() {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ action: 'getAdminData' })
+  });
+  const data = await res.json();
+  players = data;
+  renderTable();
+}
 
-    function renderTable() {
-      const tbody = document.querySelector('#adminTable tbody');
-      tbody.innerHTML = '';
-      players.forEach((player, i) => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td><input value="${player.name}" onchange="players[${i}].name=this.value" /></td>
-          <td><select onchange="players[${i}].gender=this.value">
-            <option value="M" ${player.gender==='M'?'selected':''}>M</option>
-            <option value="F" ${player.gender==='F'?'selected':''}>F</option>
-          </select></td>
-          <td><input type="checkbox" ${player.present?'checked':''} onchange="players[${i}].present=this.checked" /></td>
-          <td><input type="checkbox" ${player.include?'checked':''} onchange="players[${i}].include=this.checked" /></td>
-          <td><input type="checkbox" ${player.exclude?'checked':''} onchange="players[${i}].exclude=this.checked" /></td>
-          <td><button onclick="removePlayer(${i})">🗑️</button></td>
-        `;
-        tbody.appendChild(row);
-      });
-    }
+function renderTable() {
+  const tbody = document.querySelector('#adminTable tbody');
+  tbody.innerHTML = '';
+  players.forEach((player, i) => {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td><input class="name" value="${player.name}" /></td>
+      <td>
+        <select class="gender">
+          <option value="M" ${player.gender === 'M' ? 'selected' : ''}>M</option>
+          <option value="F" ${player.gender === 'F' ? 'selected' : ''}>F</option>
+        </select>
+      </td>
+      <td><input type="checkbox" class="present" ${player.present ? 'checked' : ''}></td>
+      <td><input type="checkbox" class="include" ${player.include ? 'checked' : ''}></td>
+      <td><input type="checkbox" class="exclude" ${player.exclude ? 'checked' : ''}></td>
+      <td><button onclick="removePlayer(${i})">🗑️</button></td>
+    `;
+    tbody.appendChild(row);
+  });
+}
 
-    function removePlayer(index) {
-      if (confirm(`Remove ${players[index].name}?`)) {
-        players.splice(index, 1);
-        renderTable();
-      }
-    }
+function removePlayer(index) {
+  if (confirm(`Remove ${players[index].name}?`)) {
+    players.splice(index, 1);
+    renderTable();
+  }
+}
 
-    function saveChanges() {
-      fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'setAdminData', players })
-      })
-      .then(() => alert('Changes saved.'))
-      .catch(() => alert('Error saving.'));
-    }
+function savePlayers() {
+  const rows = document.querySelectorAll('#adminTable tbody tr');
+  const updatedPlayers = [];
 
-    document.getElementById('addForm').onsubmit = e => {
-      e.preventDefault();
-      const name = document.getElementById('newName').value.trim();
-      const gender = document.getElementById('newGender').value;
-      if (name) {
-        players.push({ name, gender, present: false, include: false, exclude: false });
-        renderTable();
-        e.target.reset();
-      }
-    };
+  rows.forEach(row => {
+    const name = row.querySelector('.name')?.value?.trim() || "";
+    const gender = row.querySelector('.gender')?.value || "";
+    const present = row.querySelector('.present')?.checked || false;
+    const include = row.querySelector('.include')?.checked || false;
+    const exclude = row.querySelector('.exclude')?.checked || false;
 
-    fetchData();
-  </script>
+    updatedPlayers.push({ name, gender, present, include, exclude });
+  });
+
+  const payload = new URLSearchParams();
+  payload.append("action", "setAdminData");
+  payload.append("players", JSON.stringify(updatedPlayers));
+
+  fetch(API_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+    body: payload
+  })
+  .then(res => res.text())
+  .then(res => {
+    alert("Saved successfully");
+    console.log(res);
+  })
+  .catch(err => {
+    alert("Error saving");
+    console.error(err);
+  });
+}
+
+document.getElementById('addForm').onsubmit = e => {
+  e.preventDefault();
+  const name = document.getElementById('newName').value.trim();
+  const gender = document.getElementById('newGender').value;
+  if (name) {
+    players.push({ name, gender, present: false, include: false, exclude: false });
+    renderTable();
+    e.target.reset();
+  }
+};
+
+fetchData();
+</script>
+
   <script>
 const API_URL = 'https://script.google.com/macros/s/AKfycbzOF7sBUburm3FVVYD-I_tv13UZ6JfKvRNQDwXfb3gxqAx1yYczqJXDU9TangdBBYZ0/exec'; // Replace with your Web App URL
 
@@ -186,6 +215,7 @@ function savePlayers() {
 </script>
 </body>
 </html>
+
 
 
 
